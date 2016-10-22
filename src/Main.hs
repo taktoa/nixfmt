@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecursiveDo #-}
+{-# LANGUAGE RecursiveDo       #-}
 
 module Main where
 
-import Control.Applicative
-import Data.Monoid ((<>))
-import Data.Text (Text)
-import Text.Earley
-import Text.PrettyPrint (Doc, (<+>))
+import           Control.Applicative
+import           Data.Monoid         ((<>))
+import           Data.Text           (Text)
+import           Text.Earley
+import           Text.PrettyPrint    (Doc, (<+>))
 
 import qualified Data.Char
 import qualified Data.Text
