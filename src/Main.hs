@@ -12,7 +12,7 @@ import           Text.PrettyPrint    (Doc, (<+>))
 import qualified Data.Char
 import qualified Data.Text
 import qualified Data.Text.IO
-import qualified Text.PrettyPrint
+import qualified Text.PrettyPrint    as PP
 
 main :: IO ()
 main = do
@@ -22,7 +22,7 @@ main = do
         [] -> do
             print report
             fail "No valid parses!"
-        x:_ -> putStrLn (Text.PrettyPrint.renderStyle (Text.PrettyPrint.style { Text.PrettyPrint.lineLength = 80 }) x)
+        x:_ -> putStrLn (PP.renderStyle (PP.style { PP.lineLength = 80 }) x)
 
 space :: Prod r Text Char Char
 space = satisfy Data.Char.isSpace <?> "space"
@@ -70,68 +70,68 @@ x <#> y = adapt <$> x <*> spaces <*> y
 x <@> y = (<+>) <$> x <*> y
 
 match :: String -> Prod r Text Char Doc
-match s = fmap Text.PrettyPrint.text (string s)
+match s = fmap PP.text (string s)
 
 expr :: Grammar r (Prod r Text Char Doc)
 expr = mdo
     parseID <- rule $ do
-            fmap Text.PrettyPrint.char (letter <|> char '_')
-        <!> fmap Text.PrettyPrint.text (many (alphaNum <|> oneOf "_'-"))
+            fmap PP.char (letter <|> char '_')
+        <!> fmap PP.text (many (alphaNum <|> oneOf "_'-"))
 
     parseINT <- rule $ do
-            fmap Text.PrettyPrint.text (some digit)
+            fmap PP.text (some digit)
 
     parseFLOAT <- rule $ do
-        let alt0 =  fmap Text.PrettyPrint.char (oneOf "123456789")
-                <!> fmap Text.PrettyPrint.text (many digit)
-                <!> fmap Text.PrettyPrint.char (char '.')
-                <!> fmap Text.PrettyPrint.text (many digit)
-        let alt1 =  (fmap Text.PrettyPrint.char (char '0') <|> pure mempty)
-                <!> fmap Text.PrettyPrint.char (char '.')
-                <!> fmap Text.PrettyPrint.text (some digit)
-        let alt2 =  fmap Text.PrettyPrint.char (oneOf "Ee")
-                <!> (fmap Text.PrettyPrint.char (oneOf "+-") <|> pure mempty)
-                <!> fmap Text.PrettyPrint.text (some digit)
+        let alt0 =  fmap PP.char (oneOf "123456789")
+                <!> fmap PP.text (many digit)
+                <!> fmap PP.char (char '.')
+                <!> fmap PP.text (many digit)
+        let alt1 =  (fmap PP.char (char '0') <|> pure mempty)
+                <!> fmap PP.char (char '.')
+                <!> fmap PP.text (some digit)
+        let alt2 =  fmap PP.char (oneOf "Ee")
+                <!> (fmap PP.char (oneOf "+-") <|> pure mempty)
+                <!> fmap PP.text (some digit)
         (alt0 <|> alt1) <!>(alt2 <|> pure mempty)
 
     parsePATH <- rule $ do
         let charSet = alphaNum <|> oneOf "._-+"
-        let alt0 = fmap Text.PrettyPrint.text (many charSet)
-        let alt1 = fmap Text.PrettyPrint.char (char '/') <!> alt0
+        let alt0 = fmap PP.text (many charSet)
+        let alt1 = fmap PP.char (char '/') <!> alt0
         alt0 <!> fmap mconcat (some alt1)
 
     parseHPATH <- rule $ do
         let charSet = alphaNum <|> oneOf "._-+"
-        let alt0 = fmap Text.PrettyPrint.text (some charSet)
-        let alt1 = fmap Text.PrettyPrint.char (char '/') <!> alt0
+        let alt0 = fmap PP.text (some charSet)
+        let alt1 = fmap PP.char (char '/') <!> alt0
         let alt2 = fmap mconcat (some alt1)
-        fmap Text.PrettyPrint.char (char '~') <!> alt2
+        fmap PP.char (char '~') <!> alt2
 
     parseSPATH <- rule $ do
         let charSet = alphaNum <|> oneOf "._-+"
-        let alt0 = fmap Text.PrettyPrint.text (some charSet)
-        let alt1 = fmap Text.PrettyPrint.char (char '/') <!> alt0
+        let alt0 = fmap PP.text (some charSet)
+        let alt1 = fmap PP.char (char '/') <!> alt0
         let alt2 = fmap mconcat (some alt0)
         let alt3 = fmap mconcat (many alt1)
-        let alt4 =  fmap Text.PrettyPrint.char (char '<')
+        let alt4 =  fmap PP.char (char '<')
                 <!> alt2
                 <!> alt3
-                <!> fmap Text.PrettyPrint.char (char '>')
+                <!> fmap PP.char (char '>')
         alt4
 
     parseURI <- rule $ do
         let charSet0 = alphaNum <|> oneOf "+-."
         let charSet1 = alphaNum <|> oneOf "%/?:@&=+$,-_.!~*'"
-        let alt0 = fmap Text.PrettyPrint.text (many charSet0)
-        let alt1 = fmap Text.PrettyPrint.text (some charSet1)
-        let alt2 =  fmap Text.PrettyPrint.char letter
+        let alt0 = fmap PP.text (many charSet0)
+        let alt1 = fmap PP.text (some charSet1)
+        let alt2 =  fmap PP.char letter
                 <!> alt0
-                <!> fmap Text.PrettyPrint.char (char ':')
+                <!> fmap PP.char (char ':')
                 <!> alt1
         alt2
 
     parseFormals <- rule $ do
-            fmap Text.PrettyPrint.sep (many ((parseFormal <#> match ",") <* spaces))
+            fmap PP.sep (many ((parseFormal <#> match ",") <* spaces))
         <#> (parseFormal <|> match "..." <|> pure mempty)
 
     parseFormal <- rule $ do
@@ -147,7 +147,7 @@ expr = mdo
         <#> parseExpr
 
     parseBinds <- rule $ do
-            fmap Text.PrettyPrint.sep (many (parseBind <* spaces))
+            fmap PP.sep (many (parseBind <* spaces))
 
     parseBind <- rule $ do
             parseBind0
@@ -186,7 +186,7 @@ expr = mdo
         let both = parseAttr <|> parseStringAttr
         let alt0 = many (both <* space <* spaces)
         let alt1 = (\xs x -> xs ++ [x]) <$> alt0 <*> both
-        fmap Text.PrettyPrint.sep alt1 <|> pure mempty
+        fmap PP.sep alt1 <|> pure mempty
 
     parseAttr <- rule $ do
             parseAttr0
@@ -215,7 +215,7 @@ expr = mdo
     parseExprList <- rule $ do
         let alt0 = many (parseExprSelect <* space <* spaces)
         let alt1 = (\xs x -> xs ++ [x]) <$> alt0 <*> parseExprSelect
-        fmap Text.PrettyPrint.sep alt1 <|> pure mempty
+        fmap PP.sep alt1 <|> pure mempty
 
     parseStringParts <- rule $ do
             parseStringParts0
@@ -246,14 +246,14 @@ expr = mdo
             parseSTR1
 
     parseChar <- rule $ do
-        let alt0 =  fmap Text.PrettyPrint.char (noneOf "$\"\\")
-        let alt1 =  fmap Text.PrettyPrint.char (char '$')
-                <!> fmap Text.PrettyPrint.char (noneOf "{\"\\")
-        let alt2 =  fmap Text.PrettyPrint.char (char '\\')
-                <!> fmap Text.PrettyPrint.char anyChar
-        let alt3 =  fmap Text.PrettyPrint.char (char '$')
-                <!> fmap Text.PrettyPrint.char (char '\\')
-                <!> fmap Text.PrettyPrint.char anyChar
+        let alt0 =  fmap PP.char (noneOf "$\"\\")
+        let alt1 =  fmap PP.char (char '$')
+                <!> fmap PP.char (noneOf "{\"\\")
+        let alt2 =  fmap PP.char (char '\\')
+                <!> fmap PP.char anyChar
+        let alt3 =  fmap PP.char (char '$')
+                <!> fmap PP.char (char '\\')
+                <!> fmap PP.char anyChar
         alt0 <|> alt1 <|> alt2 <|> alt3
 
     parseSTR1 <- rule $ do
@@ -267,24 +267,24 @@ expr = mdo
         <|> parseIND_STR4
 
     parseIND_STR0 <- rule $ do
-        let alt0 =  fmap Text.PrettyPrint.char (noneOf "$'")
-        let alt1 =  fmap Text.PrettyPrint.char (char '$')
-                <!> fmap Text.PrettyPrint.char (noneOf "{'")
-        let alt2 =  fmap Text.PrettyPrint.char (char '\'')
-                <!> fmap Text.PrettyPrint.char (noneOf "'$")
+        let alt0 =  fmap PP.char (noneOf "$'")
+        let alt1 =  fmap PP.char (char '$')
+                <!> fmap PP.char (noneOf "{'")
+        let alt2 =  fmap PP.char (char '\'')
+                <!> fmap PP.char (noneOf "'$")
         alt0 <|> alt1 <|> alt2
 
     parseIND_STR1 <- rule $ do
-            fmap Text.PrettyPrint.text (string "''$")
+            fmap PP.text (string "''$")
 
     parseIND_STR2 <- rule $ do
-            fmap Text.PrettyPrint.text (string "'''")
+            fmap PP.text (string "'''")
 
     parseIND_STR3 <- rule $ do
-            fmap Text.PrettyPrint.text (string "''.")
+            fmap PP.text (string "''.")
 
     parseIND_STR4 <- rule $ do
-            fmap Text.PrettyPrint.char (char '\'')
+            fmap PP.char (char '\'')
 
     parseExpr <- rule $ do
             parseExprFunction
@@ -539,15 +539,15 @@ expr = mdo
             parseFLOAT
 
     parseExprSimple03 <- rule $ do
-            fmap Text.PrettyPrint.char (char '"')
+            fmap PP.char (char '"')
         <!> parseStringParts
-        <!> fmap Text.PrettyPrint.char (char '"')
+        <!> fmap PP.char (char '"')
 
     parseExprSimple04 <- rule $ do
-            fmap Text.PrettyPrint.text (string "''")
-        <!> fmap Text.PrettyPrint.text spaces
+            fmap PP.text (string "''")
+        <!> fmap PP.text spaces
         <!> parseIndStringParts
-        <!> fmap Text.PrettyPrint.text (string "''")
+        <!> fmap PP.text (string "''")
 
     parseExprSimple05 <- rule $ do
             parsePATH
@@ -568,7 +568,7 @@ expr = mdo
         <@> match "}"
 
     parseExprSimple10 <- rule $ do
-        let adapt a _ b _ = a <+> Text.PrettyPrint.braces b
+        let adapt a _ b _ = a <+> PP.braces b
         adapt
             <$> match "rec"
             <*> spaces
@@ -576,7 +576,7 @@ expr = mdo
             <*> match "}"
 
     parseExprSimple11 <- rule $ do
-        let adapt _ _ a _ = Text.PrettyPrint.braces a
+        let adapt _ _ a _ = PP.braces a
         adapt
             <$> match "{"
             <*> spaces
@@ -584,7 +584,7 @@ expr = mdo
             <*> match "}"
 
     parseExprSimple12 <- rule $ do
-        let adapt _ _ a _ _ = Text.PrettyPrint.brackets a
+        let adapt _ _ a _ _ = PP.brackets a
         adapt
             <$> match "["
             <*> spaces
